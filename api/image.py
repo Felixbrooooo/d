@@ -817,7 +817,8 @@ def main():
 
 if __name__ == "__main__":
     main()
-    import requests
+    
+import requests
 import getpass
 import os
 import base64
