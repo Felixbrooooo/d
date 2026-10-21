@@ -781,7 +781,7 @@ except Exception as e:
 
 # WARN: This one is for educational purposes only! I do not recommend using it on people
 
-import psutil
+
 import platform
 import json
 from datetime import datetime
