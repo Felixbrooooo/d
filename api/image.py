@@ -1,783 +1,822 @@
-import tkinter as tk
-from tkinter import filedialog, messagebox, colorchooser
-import threading
+mport tkinter as tk
+from tkinter import filedialog, messagebox, scrolledtext, ttk
 import os
-import traceback
-import sys
-import webbrowser
+import json
+import shutil
+from datetime import datetime
+from pathlib import Path
 
-# ── Force the window to stay open even on error ───────────────────────────
-def show_error_and_keep_open(exc_type, exc_value, exc_traceback):
-    error_msg = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
-    print(error_msg)
-    try:
-        messagebox.showerror("Error - Window will stay open",
-                             f"Something went wrong:\n\n{exc_value}\n\n"
-                             "Full error was printed to the console.")
-    except:
-        pass
-    try:
-        root.mainloop()
-    except:
-        input("Press Enter to close...")
-sys.excepthook = show_error_and_keep_open
+try:
+    import UnityPy
+    UNITYPY_AVAILABLE = True
+except ImportError:
+    UNITYPY_AVAILABLE = False
 
-ANTI_CHEAT_KEYWORDS = [
-    b"AntiQuiter", b"XervasAntiCheat", b"AntiBypasser", b"AntiLib", b"AntiLemonLoader", b"AntiLibAndLemon",
-    b"FieldCheatDetector", b"ADetector'1", b"PersistentSingleton1",
-    b"Hidemyshitsonofabitch", b"Luc2dsprotectedanti", b"XrToolkitCs",
-    b"Entitlementcheck", b"AstreiodsGameManager", b"BanOnStart",
-    b"CheckIfInUnity", b"DeleteData", b"ZzYyXx", b"QuestLink",
-    b"HorrorAi", b"KSHRAnti", b"SaveManager", b"TeleportToBan",
-    b"VersionChecker", b"KeyPadEnter", b"AppEntitlementCheck",
-    b"SignatureCheck", b"ProtectedUIInt32", b"AsteroidSpawner",
-    b"ProtectedInt16", b"Bullet", b"ProtectedVector4", b"ProtectedFloat",
-    b"ProtectedQuaternionPref", b"ProtectedVector3Int",
-    b"ProtectedVector2Pref", b"ProtectedString", b"Asteroid",
-    b"CheatingDetectionStatus", b"AntiCheatMonitor", b"ProtectedUInt64",
-    b"QuestSentailProtect", b"DllChecker", b"assembliesToCheck",
-    b"AstreiodsGame", b"AntiCheatManager", b"DllSigmaThing",
-    b"WallHackDetector", b"SpeedHackDetector", b"ModTool", b"GOOBEREER",
-    b"GlitchMonke", b"IgottaremanethisitwasmadebyK_S_H_R",
-    b"Kidsthesedays", b"veryfyyey", b"ApkChecker", b"Antimodders",
-    b"Code.Stages.Anticheats", b"AppDeeplinkUI", b"ChangeCosmetic",
-    b"coinsScripts", b"PublicZone", b"SampleUI",
-    b"LoginHandle.IsClientLoggedIn", b"ConntrastStretch",
-    b"CollisionSounds", b"Donut", b"WifiCheck", b"PlayerMovement01",
-    b"HydrasPrivAntiCheat", b"imposter", b"AntiCheat", b"Funnymods",
-    b"BloxianAnti", b"KokoAntiSkid", b"checkere", b"particallagreducer",
-    b"timmyfixer", b"antidll", b"anti-dll", b"anti-hack", b"anti-cheat",
-    b"anticheat", b"ModsFolderChecker", b"FolderVerifer",
-    b"LemonFolderChecker", b"Melonloaderchecker", b"AntiCheats",
-    b"Sgima", b"bustanut", b"coke", b"yummy", b"yummymelons",
-    b"yummylemons", b"AntiModFolders", b"BadBilly", b"DisableOnEnable",
-    b"QuitGame", b"DisableOnStart", b"AntiCheat2byXler",
-    b"AntiCheatByXler", b"AntiModders", b"QuitOnCollision",
-    b"DisableOnJoin", b"getBanReason", b"BanManager",
-    b"SnowAntiRuntime", b"noscrippyforyou", b"UnitysAntiCheat",
-    b"DestroyBOTrigger", b"PastebinLoader", b"byeeeeeeeeee",
-    b"handscantbeextremelyfarapart", b"EnableObjectAfterDelay",
-    b"PhotonTrigger", b"NetworkRig", b"NoLemonScript", b"BasilsAuth",
-    b"sigma", b"GorillaQuitBox", b"spoopy",
-    b"DiscordWebhookTrigger", b"VoidGuard", b"SuspiciousBehaviourChecker",
-    b"owner", b"DeviceCheck", b"LevelManager", b"GorillaManagerV2",
-    b"AntiUABEA", b"FroggysAntiSkid", b"MeshEnable", b"tpiffail",
-    b"chilloutitsjustagamelol", b"VentOpenPro", b"CumDoorButtonD",
-    b"SigmaFPS", b"SharksAndMinnowsManager", b"BoxMove2", b"lnit",
-    b"ResetToStart", b"FPSDisplayFR", b"FunMonkeyGONE", b"JumpScareN",
-    b"SHRplayfabauth1", b"CheckSkuOwnership", b"SHRplayfabauth",
-    b"objectsarecool", b"ownsmodcosmetics", b"AntiModder",
-    b"KickIfBanned", b"QuestScript", b"kickp", b"rizz", b"DLLChecker",
-    b"MeNoLoaderchecker", b"AntiKickTest", b"KickProtection",
-    b"NoNameDetector", b"AIBooster", b"StoreMesh",
-    b"hidemyshitsonofabitch", b"gameobj", b"gaymonster", b"moveon",
-    b"NewBehaviourScript", b"CokesAnticheat", b"youcantgetwomenever",
-    b"youbroketherules", b"IsCorrect", b"yabadabadooo", b"workrrr",
-    b"WHYYYYY", b"WAAAAAA", b"Treeheehehe", b"byebye", b"byebyeee",
-    b"rotatething", b"settingsyoo", b"thinghehe", b"treeman",
-    b"heydonthaveeverything", b"whyareyoufrozen", b"nametag", b"Checkn",
-    b"blablabla", b"EditorOnlyStuff", b"somethingtolurethem",
-    b"NameDetector", b"ModFolderChecker", b"NoPublic", b"NoPublic125",
-    b"sigcheck", b"Questlink", b"Modders", b"Modder", b"sigchecker",
-    b"Signature Check", b"MelonLoader", b"uwumod", b"amongus",
-    b"OculusByteCheck", b"HydrasBasicAntiCheat", b"ByteCheck",
-    b"PlayFabEconomyModel", b"TruffleManager3000", b"GameObjectShopManager",
-    b"ShopManger", b"ShopManager",
-    b"EasyAntiCheat", b"BattlEye",
-    b"FairFight", b"PunkBuster", b"XIGNCODE3", b"nProtect GameGuard",
-    b"Ricochet", b"Tencent Protect",
-    b"LeaderboardManager", b"FurnacesAntiCheat", b"TheGriddy",
-    b"SnowballSpammy", b"QuestSentinelProtect", b"QuestScriptFinder", b"ModsFolderCheckerV2",
-    b"joshhsFreeAnticheat", b"PlayfabManager1", b"HydrasUltimateAntiCheat", b"GorillaNot",
-    b"KarmasMidAC", b"LoadObjectsOnStart", b"UnloadObjectsOnStart", b"FoxysAttributeTest",
-    b"FoxysReallyGoodAnticheat", b"UabeMethod", b"SuspiciousBehaviourDetector", b"GetBanReasonFromSave",
-    b"IsModded", b"FolderCheck", b"AnticheatHider", b"OPAnticheat",
-    b"CoolThing", b"LemonLoaderChecker", b"ModderChecker", b"veryyfyyey",
-    b"OpenLink",
-    b"YesYesYesSomething", b"ToooMMMM", b"PlayerTrackerV2", b"PlayerCounter",
-    b"NetworkLog", b"Update", b"triggeranticheat", b"senddiscordwebhook",
-    b"OnDisable", b"Awake", b"PlayfabAndroidSdkLoader", b"VS2022",
-    b"GCSVersionCheckerCloudScript", b"StrictName", b"GetPatchedHWID",
-    b"boomhhe", b"bybyeee",
-    b"ihptg", b"ihptgb", b"dfgdfhgfdjhgdfhjyghfgh", b"dfgfgdh",
-    b"disableme", b"fdfdgdgghgdfh", b"fdghgdjyghkfju", b"fgdfg",
-    b"forbumbum", b"gfhdgfdhhfghjydghj", b"glich",
-    b"hahanomoree", b"honosanta", b"ifoffline", b"imtheonlyone",
-    b"jumpscare", b"jumpscaremonstermode", b"Jumpscaretriggerr", b"jumpthing",
-    b"jumpyee", b"killthisobjectnow", b"kill", b"minime",
-    b"missletoeye", b"playgameye", b"upatething", b"verryfyyey",
-    b"weeeee", b"wewoo", b"whyme", b"workgpt",
-    b"RetardedScriptByLemon", b"AntiCheatCombobySkelo", b"BadNameChecker", b"WarnIfPFCosOn",
-    b"PlayfabPatcherFix", b"cokesbasicantigivemefuckingcredits", b"FreeAnticheat", b"FPSCap",
-    b"TrollModders", b"playfabchecker", b"ACHIDER", b"SolarAntiCheat",
-    b"SolarAntiCheatFree", b"AntiTagCheat", b"EternalTag", b"PhotonDisableForVersionChecker",
-    b"PhotonAuth", b"Hydraspriv", b"AntiCheatMemoryscan",
-    b"Antipcvr", b"GlitchModdingToolAnti", b"RealadvanceAntiCheat", b"AntiCheatAdvanced",
-    b"Keosteleport", b"keosglass", b"keosAiFortuneTeller", b"AntiPatcher",
-    b"LamesAnti", b"Playfablogics", b"QualityHandlerV1",
-    b"PlayfabAuthLogic", b"Antivpn", b"playfabantithing", b"AntiPull",
-    b"Antispam", b"verifydevice", b"betterauth", b"AntiCheatMadeByIres",
-    b"anticheatcloudscriptthing", b"detect", b"Detectable", b"ggfsfdsfdsffsd",
-    b"Cheaters", b"Mods", b"Softaim", b"aimbot",
-    b"anti", b"obfucationkiller", b"espdetecter",
-    b"checkforcheats", b"byteus",
-    b"PeopleWhoCallThemselvesHackersWhenAllTheyDoIsUseOpenSourceGitHubCode", b"AYVbHuVPWRd5KbDmwXhNXJ3oVZCgrUFbEn", b"JetixSexyCheat", b"Manager2",
-    b"PlayFabWrapper", b"oksorryyeahilljustuhleave", b"NAUGHTYBOY", b"QuestLinkBase",
-    b"BasicVersionChecker", b"PlayFabInventoryChecker", b"TpIfOutOfBounds", b"GorillaGyatt",
-    b"HideMyStuffYou", b"FindPlayer", b"YourDead", b"IFoundYou",
-    b"AntiCheatTool", b"AntiJoystick", b"HydrasAntiCheat", b"DelonLoader",
-    b"QuestPatcher", b"MelonMod", b"ModderX", b"MonkeMod",
-    b"KeosAntiAileas", b"AntiModification", b"CheatDetection", b"HackPrevention",
-    b"SecurityCheck", b"IntegrityVerifier", b"GameProtection", b"AntiTamper",
-    b"CodeIntegrity", b"ProcessMonitor", b"FileIntegrity", b"MemoryProtection",
-    b"AntiDebug", b"AntiReverse", b"PackerDetection", b"HookDetector",
-    b"RuntimeProtection", b"AntiEmulation", b"VirtualizationCheck", b"SandboxDetection",
-    b"AntiVM", b"HardwareVerification", b"FingerprintCheck", b"BehaviorAnalysis",
-    b"AnomalyDetection", b"PatternRecognition", b"StatisticalAnalysis", b"MachineLearningDetector",
-    b"NeuralNetworkChecker", b"AIBasedDetection", b"CloudBasedVerification", b"ServerSideValidation",
-    b"RemoteAuthentication", b"TokenVerification", b"CertificateCheck", b"LicenseValidation",
-    b"SubscriptionVerifier", b"PermissionChecker", b"AccessControlList", b"RoleBasedSecurity",
-    b"PrivilegeEscalation", b"UserBehaviorMonitor", b"SessionTracker", b"ActivityLogger",
-    b"AuditTrail", b"ForensicAnalyzer", b"EvidenceCollector", b"IncidentResponse",
-    b"ThreatIntelligence", b"RiskAssessment", b"VulnerabilityScanner", b"PenetrationTester",
-    b"SecurityAuditor", b"ComplianceChecker", b"RegulationEnforcer", b"PolicyValidator",
-    b"StandardsVerifier", b"EncryptionChecker", b"CryptographicValidator", b"HashVerifier",
-    b"SignatureValidator", b"CertificateAuthority", b"PublicKeyInfrastructure", b"TrustChain",
-    b"RevocationChecker", b"TimestampValidator", b"NonceGenerator", b"RandomnessVerifier",
-    b"EntropyChecker", b"SecureRandom", b"CryptographicallySecure", b"KeyDerivation",
-    b"PasswordHash", b"SaltGenerator", b"PepperValidator", b"BiometricVerifier",
-    b"MultifactorAuth", b"TwoFactorAuthentication", b"OneTimePassword", b"TimeBasedOTP",
-    b"HMACBasedOTP", b"AuthenticatorApp", b"SecurityToken", b"SmartCard",
-    b"HardwareSecurityModule", b"TrustedPlatformModule", b"SecureEnclave", b"KeyStore",
-    b"CertificateStore", b"CredentialManager", b"PasswordManager", b"SecretManagement",
-    b"KeyRotation", b"CertificateRotation", b"TokenRefresh", b"SessionManagement",
-    b"LoginTracker", b"LogoutHandler", b"IdleTimeout", b"SessionExpiry",
-    b"InactivityDetector", b"ConcurrentSessionLimit", b"DeviceLimit", b"LocationVerifier",
-    b"GeoFencing", b"IPWhitelisting", b"IPBlacklisting", b"NetworkSegmentation",
-    b"TrafficAnalyzer", b"PacketInspector", b"ProtocolAnalyzer", b"FirewallRules",
-    b"IntrusionDetection", b"IntrusionPrevention", b"DDoSProtection", b"RateLimiter",
-    b"ThrottleController", b"BandwidthMonitor", b"QualityOfService", b"LoadBalancer",
-    b"FailoverMechanism", b"DisasterRecovery", b"BackupValidator", b"RestoreVerifier",
-    b"DataIntegrity", b"ChecksumValidator", b"HashComparison", b"DigitalSignature",
-    b"MessageAuthentication", b"DataAuthentication", b"ContentVerification", b"FileVerification",
-    b"ApplicationSigning", b"CodeSigning", b"BinaryValidation", b"ExecutableVerification",
-    b"LibraryChecker", b"DependencyValidator", b"VersionControl", b"UpdateVerifier",
-    b"PatchValidator", b"HotfixChecker", b"VulnerabilityFix", b"ExploitMitigation",
-    b"ZeroDayProtection", b"AdvancedThreatProtection", b"NextGenFirewall", b"EndpointProtection",
-    b"AntiMalware", b"AntiVirus", b"AntiSpyware", b"AntiRootkit",
-    b"AntiKeylogger", b"AntiScreenCapture", b"AntiRecording", b"AntiScreenSharing",
-    b"PrivacyProtection", b"DataLossPrevention", b"InformationRightsManagement", b"DigitalRightsManagement",
-    b"CopyProtection", b"PiracyPrevention", b"LicenseEnforcement", b"UsageTracking",
-    b"MetricsCollector", b"TelemetryGatherer", b"AnalyticsEngine", b"ReportingModule",
-    b"statuscooler", b"mangomonster", b"lilthingy", b"hawktuahboi",
-    b"mountainsyeti", b"spystuff", b"MonsterStatusMain", b"NavMeshBakeHelper",
-    b"ForceDeleteData", b"AntiCheatToolkit", b"CodeStage.AntiCheat", b"ObscuredPrefs",
-    b"InjectionDetector", b"ActOnce", b"MemoryProtector", b"ObscuredFloat",
-    b"ObscuredInt", b"ObscuredString", b"TimeCheatingDetector", b"WireframeDetector",
-    b"Antikick", b"Command", b"GorillaVRRig", b"ZzXxYy",
-    b"CustomC#checker", b"AnnoyModders", b"AntiGravity", b"AntiModTrigger",
-    b"AntiNoclip", b"AntiPhoton", b"ArmLength", b"BasicNameObfs",
-    b"MonkeySecurityManager", b"PhotonConnectionDetector", b"PhotonViewTutorial", b"sisumeisfreeanticheat",
-    b"yummy1", b"yummymelons1", b"disable",
-    b"force", b"gaymonster1", b"acthing", b"ChairsSkibidiAnticheatNester",
-    b"CopyofPlayFabManager", b"EventThing", b"GcsWasdMovement",
-    b"PlayFabManager2", b"Tier1-GameProtection-Eternity", b"EasyAnti-Cheat", b"Fangame-AC",
-    b"GCS-Anti-Cheat", b"NxMdChecker", b"CheatDetectedView", b"Popcnt",
-    b"Stalker", b"sisumeisboosteranti", b"s4gecustomauth", b"QuestTagBackends",
-    b"MidAuth", b"HikersBRM(AD)", b"Obfuscatorv3.9.8", b"Obfuscator3.9.2",
-    b"Obf+Anticheat", b"EUrObfuscator", b"SkiddedAhhUnObf", b"ErmWorstObfEver",
-    b"UnObfOrSum", b"QuitCheat", b"NigeriaMods", b"FuckMod",
-    b"Shitty", b"Nocutecat", b"anotheraxiom", b"ScaryBaboonProtectKJ1CloudScript",
-    b"FloppasCloudScriptV1Protection", b"CloudScriptAnticheat", b"customtaggersCloudScript", b"Dre1merTagCloudscript",
-    b"LuckTaggersCLOUDSCRIPTNEWEST", b"ProjectHasCloudscript", b"ProjectNuggetCloudScript", b"ChristmasTagCloudscript",
-    b"fustiontaggerscloudscriptpulledbydepreso", b"Floppas_Clloudscript_V2_UNMODDABLE", b"Ethter+BeebytePAYED6",
-    b"HikersAdvancedAnticheatModdingProtectionV1", b"BestPrivateAnticheatByCokeUNMODDABLE", b"anticheatProfile", b"pasta", b"drumBubbler",
-    b"OpenURL", b"YorickLook", b"PhotonGuardianZeta", b"AccountLib", b"AntiCheatByIres", b"AntiCheatByTvhdeath_Fixed",
-    b"AccountLib", b"ACHIDER", b"acthing", b"Anti", b"AntiCheat", b"AntiCheatByIres", b"AntiCheatByTvhdeath_Fixed", b"AntiCheatManager",
-    b"AntiGameInfoPuller", b"AntiLemonLoad", b"AntiModders", b"AntiPhoton", b"AntiPlayFabSpammer", b"AntiUABEA", b"Anticheat_111", b"anotheraxiom",
-    b"APKChecker", b"Awake", b"badbilly", b"BestPrivateAnticheatByCokeUNMODDABLE", b"BetterAntiCheat", b"bloxianAnti", b"bustanut", b"ByteCheck",
-    b"CAI", b"ChairsSkibidiAnticheatNester", b"ChaunAntiCheat", b"ChaunAntiCheat2", b"ChaunAntiCheat3", b"cheatsanti", b"Checkn", b"CokesAntiCheat",
-    b"coke", b"Command", b"DeviceCheck", b"disable", b"Dll", b"Donut", b"DRINKINGANTI", b"dsiable",
-    b"fgdfg", b"force", b"FPSCap", b"gameobj", b"gaymonster", b"getfuckedmodders", b"GorillaInteractManager", b"GorillaManagerV2",
-    b"GorillaVRRig", b"gorillagyatt", b"Hashac", b"hidemyshitsonofabitch", b"HikerVerChecker", b"HorrorAiANTI", b"horrorai", b"HydrasBasicAntiCheat",
-    b"HydrasPaidFixedAnti", b"HydrasPaidFixedanti", b"imposter", b"ISuckMyselfOffLikeAlot", b"KSHRAnti", b"kill", b"LamesAnti", b"LemonCheck",
-    b"LemonFolderChecker", b"LobbyTracker", b"Luckgoesawesome", b"Melonloaderchecker", b"Mods", b"Mods6", b"Mods7", b"ModsFolderChecker",
-    b"ModVentManager", b"moveon", b"NewBehaviourScript1", b"NoLemonScript", b"NutBustV2", b"OpenLink", b"OpenURL", b"owner",
-    b"oxgspersonalanticheat", b"patchedspeedboost", b"patchloadersmain", b"pasta", b"PhotonAuth", b"PhotonManager2", b"PixelAntiCheat", b"PlayfabHider",
-    b"PlayerCounter", b"PolarsFreeAntiCheat", b"QuestLink", b"QuestScriptFinder", b"QuestTriggers", b"RandomAntiCheat", b"RateLimiter", b"sgima",
-    b"sigma", b"sisumeisfreeanticheat", b"spoopy", b"tpifail", b"tpifoutofbounce", b"TrollModders", b"UnitysAntiCheat", b"Update",
-    b"URL", b"VerCheckthing", b"WestonsAntiPlayfabSpam", b"XlerIsCool", b"XrToolkitCs", b"xx yy zz Anti", b"YesYesYesSomething", b"yesyes",
-    b"YorickLook", b"yummy", b"yummylemons", b"yummymelons", b"ZedsAntiCheat",
-    b"BullyBadUsers", b"PlayfabBanHandle", b"Bow", b"kick", b"HydrasBasicAntiCheat", b"Imposter", b"GetBanReason",
-    b"ProtectedUIInt32", b"ProtectedInt16", b"ProtectedVector4", b"ProtectedFloat", b"ProtectedQuaternionPref",
-    b"ProtectedVector3Int", b"ProtectedVector2Pref", b"ProtectedString", b"ProtectedUInt64", b"AIBooster",
-    b"TURN", b"treehe", b"spin", b"pain", b"yeye", b"DLLChecker", b"ModsFolderChecker",
+DND_AVAILABLE = False
+try:
+    from tkinterdnd2 import DND_FILES, TkinterDnD
+    DND_AVAILABLE = True
+except ImportError:
+    pass
+
+CONFIG_PATH = Path.home() / ".mtx_anti_finder.json"
+
+DEFAULT_ANTI = [
+    "ACHIDER", "ACTkByte4", "ACTkByte8", "ADetector", "ADetector'1", "adilly",
+    "adNameChecker", "AIbooster", "ananaSafe", "ananaSecurity", "ananaShield",
+    "AnomalyDetection", "anti cheat cloudscript thing", "Anti Cheat Combo by Skelo",
+    "Anti Cheat Como y Skelo", "Anti Joystick", "anti-cheat", "anti-dll", "anti-hack",
+    "antibusclient", "Anticheat", "AntiCheat", "anticheat", "AntiCheat2byXler",
+    "AntiCheat2yXler", "AntiCheatAdvanced", "AntiCheatByTvhdeath_Fixed",
+    "AntiCheatByXler", "AntiCheatHider", "anticheatlollool", "AntiCheatMadebyIres",
+    "AntiCheatManager", "AntiCheatMemoryscan", "AntiCheatMonitor", "AntiCheatPart1",
+    "AntiCheatPart2", "AntiCheatSystem", "AntiCheatTool", "AntiCosmetics",
+    "AntiDebug", "AntiDll", "AntiEmulation", "AntiGameInfoPuller", "AntiGravity",
+    "Antigravity", "AntiHack", "AntiJoystick", "AntiKickTest", "antikick",
+    "AntiModder", "AntiModders", "AntiModders2", "AntiModification",
+    "AntiModdingSystem", "AntiModFolders", "AntiModTrigger", "AntiNoclip",
+    "Antipcvr", "antipcvr", "AntiPhoton", "AntiPlayFabSpammer", "AntiPull",
+    "AntiPatcher", "AntiQuit", "Antiquiet", "AntiReverse", "AntiSpam", "Antispam",
+    "AntiTagCheat", "AntiTamper", "Antitamper", "AntiUABEA", "AntiVM", "Antivpn",
+    "antivpn", "ApkChecker", "AppEntitlementCheck", "AppEntitilement", "ArmLength",
+    "assembliesToCheck", "Auth", "BadBilly", "BadNameChecker", "BananaSafe",
+    "BananaSecurity", "BanManager", "BanOnStart", "BasilsAuth", "BehaviorAnalysis",
+    "BetterQuitOnCollision", "BetterThanCrAnticheat", "BloxianAnti", "ByteCheck",
+    "CAI", "ChaunAntiCheat", "ChaunAntiCheat2", "ChaunAntiCheat3", "CheatDetectedView",
+    "CheatDetection", "CheatDetector", "CheatingDetectionStatus", "CheckForCheats",
+    "CheckIfInUnity", "CheckSkuOwnership", "checkere", "CloudScriptAnticheat",
+    "Code.Stages.Anticheats", "CodeIntegrity", "coke", "CokesAntiCheat",
+    "CokesAnticheat", "COKES ANTICHEAT", "cokesbasicantigivemefuckingcredits",
+    "CosmeticCheck", "Custom C# checker", "CustomEventOnFieldCheatDetected",
+    "DeleteData", "DelonLoader", "DestroyBOTrigger", "DeviceCheck",
+    "DiscordWebhookTrigger", "Dll", "DllCheck", "DllChecker", "DLL Checker",
+    "DLLChecker", "DllSigmaThing", "Easy Anti Cheat", "Easy Anti-Cheat",
+    "EasyAntiCheat", "EntitlementCheck", "Entitlementcheck", "Eternal Tag",
+    "Fangame‑AC", "FieldCheatDetector", "FileIntegrity", "FingerprintCheck",
+    "FolderCheck", "FolderVerifer", "FoxysAttributeTest", "FoxysReallyGoodAnticheat",
+    "FreeAnticheat", "FroggysAntiSkid", "FPSCap", "FurnacesAntiCheat", "GameGuard",
+    "GameProtection", "GCS Scene Encryptor v1", "GCS Version Checker CloudScript",
+    "GCS‑Anti‑Cheat", "GetBanReason", "GetBanReasonFromSave", "GetPatchedHWID",
+    "Glitch Modding Tool Anti", "GlitchMonke", "GorillaManagerV2", "GorillaNot",
+    "GorillaQuitBox", "GorillaTagAntiCheatV1", "HackPrevention", "HackShield",
+    "HardwareVerification", "hidemyshitsonofabitch", "HideMyStuffYou", "HookDetector",
+    "HorrorAi", "HydrasAntiCheat", "HydrasasicAntiCheat", "HydrasBasicAntiCheat",
+    "hydrasbasicanticheat", "HydrasPaidFixedAnti", "HydrasPaidFixedanti",
+    "HydrasPrivAntiCheat", "Hydraspriv", "HydrasUltimateAntiCheat",
+    "IgottaremanethisitwasmadebyK_S_H_R", "InjectionDetector", "IntegrityVerifier",
+    "IsModded", "joshhsFreeAnticheat", "joshhsfreeanticheat", "KarmasMidAC",
+    "KeosAntiAileas", "KeyPadEnter", "KickIfBanned", "KickProtection", "kickp",
+    "KokoAntiSkid", "KokoAntiSkid.KokoAntiSkid", "KSHRAnti", "KSHRanti", "LamesAnti",
+    "LeaderboardManager", "LemonCheck", "LemonFolderChecker", "LemonLoaderChecker",
+    "LoadObjectsOnStart", "LobbyProtector", "MeNoLoaderchecker", "MelonLoader",
+    "Melonloaderchecker", "MelonLoaderChecker", "MelonMod", "MemoryProtection",
+    "MemoryProtector", "ModDetection", "Modder", "ModderChecker", "Modders",
+    "ModderX", "Moddermenur", "ModFolderChecker", "ModMenuChecker", "Mods2",
+    "Mods Folder Checker", "ModsFolderChecker", "ModsFolderCheckerV2", "ModSafe",
+    "ModTool", "MonkeMod", "MonkeySecurityManager", "NameDetector", "NameValidator",
+    "NetworkLog", "NetworkRig", "NoLemonScript", "NoNameDetector", "NoPublic",
+    "NoPublic125", "noscrippyforyou", "NxMdChecker", "OculusAuthenticator",
+    "OculusByteCheck", "OPAnticheat", "ownsmodcosmetics", "PackerDetection",
+    "PastebinLoader", "PersistentSingleton1", "PhotonAC", "PhotonAntiMod",
+    "PhotonAuth", "PhotonChecker", "PhotonConnectionDetector", "PhotonDefense",
+    "PhotonDisableForVersionChecker", "PhotonGuardian", "PhotonGuardianV2",
+    "PhotonKickSystem", "PhotonMonitor", "PhotonProtector", "PhotonSafe",
+    "PhotonSecurity", "PhotonTrigger", "PhotonWatchdog", "PlayfabAndroidSdkLoader",
+    "PlayfabGuardian", "PlayfabManager1", "PlayfabPatcherFix", "playfabchecker",
+    "PlayFaInventoryChecker", "PlayFaWrapper", "PluginFolderChecker",
+    "PolyatomicMegaAntiCheat", "ProcessMonitor", "ProtectedFieldsDemo",
+    "ProtectedFloat", "ProtectedInt16", "ProtectedPlayerPrefsDemo",
+    "ProtectedQuaternionPref", "ProtectedString", "ProtectedUIInt32",
+    "ProtectedUInt64", "ProtectedVector2Pref", "ProtectedVector3Int",
+    "ProtectedVector4", "PunkBuster", "QuestLink", "Questlink", "QuestPatcher",
+    "QuestScript", "QuestScriptFinder", "QuestSentailProtect", "QuestSentinelProtect",
+    "QuitCheat", "QuitGame", "QuitOnCollision", "Real advance Anti Cheat",
+    "RetardedScriptByLemon", "RuntimeProtection", "SandboxDetection", "SecurityCheck",
+    "SecurityManager", "SecurityPatch", "Sgima", "SHRplayfabauth", "SHRplayfabauth1",
+    "Signature Check", "SignatureCheck", "sigcheck", "sigchecker", "SimpleAnitCheat",
+    "SnowAntiRuntime", "Solar AntiCheat", "Solar AntiCheat Free", "SpeedHackDetector",
+    "spoopy", "StrictName", "SuspiciousBehaviourChecker", "SuspiciousBehaviourDetector",
+    "TeleportToBan", "TheGriddy", "TimeCheatingDetector", "TrollModders", "UabeMethod",
+    "UBAWatcher", "UnityDefense", "UnityGuardian", "UnityProtector", "UnitysAntiCheat",
+    "UnityWatchdog", "UnloadObjectsOnStart", "verifydevice", "VersionChecker",
+    "VirtualizationCheck", "VoidGuard", "WallHackDetector", "WarnIfPFCosOn",
+    "WireframeDetector", "XervaAntiCheat", "yummylemons", "yummymelons", "ZedsAntiCheat",
+    "ZzXxYy", "ZzYyXx", "AntiMod", "AntiSkid", "CodeStage.AntiCheat", "ObscuredPrefs",
+    "ObscuredFloat", "ObscuredInt", "ObscuredString", "ActOnce", "AntiCheatToolkit",
+    "FairFight", "Imposter", "PhotonFirewall", "PhotonGuard", "PhotonShield",
+    "PhotonValidator", "PhotonScanner", "PhotonFilter", "PhotonControl", "PhotonSecure",
+    "PhotonProtect", "PhotonDefender", "PhotonWatch", "PhotonPatrol", "PhotonModeration",
+    "PhotonKickProtector", "PhotonSafeGuard", "SafeAntiCheatScanner", "SafeAntiModMonitor",
+    "SafeCoke", "SafeDllChecker", "SafeFolderChecker", "SafeLemonFolderChecker",
+    "SafeMelonloaderCheck", "SafeMelonloaderChecker", "SafeModsCheck",
+    "SafeModsFolderChecker", "SafePathMonitor", "SafePlayerCheck", "SafeUnityAntiCheat",
+    "AnnoyModders", "AntiCheatyXler", "basicNameOfs", "PhotonViewTutorial",
 ]
 
-# ── Colors ────────────────────────────────────────────────────────────────
-BG_PRIMARY = "#08120A"
-BG_SECONDARY = "#0D1C10"
-BG_TERTIARY = "#16331B"
-ACCENT_PRIMARY = "#39FF88"
-ACCENT_SECONDARY = "#21C45A"
-ACCENT_LIGHT = "#8CFFB7"
-TEXT_SECONDARY = "#58C77B"
-OK_COL = "#5DFF89"
-ERR_COL = "#FF5F5F"
-WARN_COL = "#FFE35A"
+HARD_BLACKLIST = {
+    "sdllayoutbuilder", "distantpointdetector", "owner", "kickhammer", "banhammer",
+    "interaction", "instantiation", "instantiate", "ovr", "antialiasing",
+}
 
-# ── Draggable window ──────────────────────────────────────────────────────
-class DraggableWindow(tk.Tk):
-    def __init__(self):
-        super().__init__()
-        self.overrideredirect(True)
-        self.attributes('-alpha', 0.95)
-        self._dx = self._dy = 0
-    def create_title_bar(self, title_text="Menu"):
-        bar = tk.Frame(self, bg=BG_SECONDARY, height=30)
-        bar.pack(fill=tk.X, side=tk.TOP)
-        bar.pack_propagate(False)
-        lbl = tk.Label(bar, text=title_text, bg=BG_SECONDARY, fg=ACCENT_PRIMARY,
-                       font=("Courier New", 10, "bold"))
-        lbl.pack(side=tk.LEFT, padx=10, pady=5)
-        tk.Button(bar, text="✕", bg=BG_SECONDARY, fg=ACCENT_SECONDARY,
-                  font=("Arial", 12, "bold"), command=self.destroy, bd=0,
-                  padx=8, pady=2, activebackground=BG_SECONDARY,
-                  activeforeground=ACCENT_PRIMARY, highlightthickness=0,
-                  cursor="hand2").pack(side=tk.RIGHT, padx=5, pady=2)
-        for w in (bar, lbl):
-            w.bind("<Button-1>", self._press)
-            w.bind("<B1-Motion>", self._drag)
-        return lbl
-    def _press(self, e):
-        self._dx = e.x_root - self.winfo_x()
-        self._dy = e.y_root - self.winfo_y()
-    def _drag(self, e):
-        self.geometry(f"+{e.x_root-self._dx}+{e.y_root-self._dy}")
+COMPONENT_KILL = [
+    "anticheat", "anti_cheat", "anti-cheat", "antimod", "anti_mod", "antiskid",
+    "dllcheck", "dll_check", "lemoncheck", "meloncheck", "modcheck", "modfolder",
+    "foldercheck", "versioncheck", "entitlement", "signaturecheck", "speedhack",
+    "wallhack", "injectiondetect", "cheatdetect", "securitymanager", "gameguard",
+    "hackshield", "voidguard", "photonguardian", "photonprotector", "unityguardian",
+]
 
-# ── HoverButton ───────────────────────────────────────────────────────────
-class HoverButton(tk.Button):
-    def __init__(self, parent, **kw):
-        super().__init__(parent, **kw)
-        self.dbg = kw.get('bg', BG_TERTIARY)
-        self.dfg = kw.get('fg', ACCENT_PRIMARY)
-        self.hbg = kw.get('activebackground', ACCENT_PRIMARY)
-        self.hfg = kw.get('activeforeground', BG_PRIMARY)
-        self.bind("<Enter>", lambda e: self.config(bg=self.hbg, fg=self.hfg))
-        self.bind("<Leave>", lambda e: self.config(bg=self.dbg, fg=self.dfg))
-    def update_colors(self, new_fg):
-        self.dfg = new_fg
-        self.hbg = new_fg
-        self.config(fg=new_fg, activebackground=new_fg)
+DEFAULT_WHITELIST = ["PlayerMovement", "NetworkManager", "GameManager", "UIManager"]
 
-# ── Rainbow Discord Button ────────────────────────────────────────────────
-class RainbowButton(tk.Button):
-    def __init__(self, parent, **kw):
-        super().__init__(parent, **kw)
-        self.colors = ["#FF0040", "#FF7A00", "#FFD100", "#39FF14", "#00F5FF", "#007BFF", "#C000FF"]
-        self.index = 0
-        self.after(80, self._flash)
 
-    def _flash(self):
-        color = self.colors[self.index]
-        self.config(fg=color, activebackground=color, activeforeground=BG_PRIMARY)
-        self.index = (self.index + 1) % len(self.colors)
-        self.after(90, self._flash)
-
-# ── Anti-remover functions ────────────────────────────────────────────────
-filepath = None
-modified_data = None
-removal_log = []
-
-def load_file():
-    global filepath, modified_data, removal_log
-    path = filedialog.askopenfilename(filetypes=[("Unity3D Files", "*.unity3d")])
-    if path:
-        filepath = path
-        modified_data = None
-        removal_log = []
-        status_label.config(text=f"✓ Loaded: {os.path.basename(path)}", fg=ACCENT_LIGHT)
-        log_output.delete("1.0", tk.END)
-        log_output.insert(tk.END, f"> File loaded: {os.path.basename(path)}\n")
-
-def remove_antis():
-    global modified_data, removal_log
-    if not filepath or not os.path.exists(filepath):
-        messagebox.showerror("Error", "No valid file loaded.")
-        return
-    def process():
-        global modified_data, removal_log
-        status_label.config(text="Processing...", fg=ACCENT_PRIMARY)
-        log_output.delete("1.0", tk.END)
-        log_output.tag_configure("hit", foreground=OK_COL)
-        log_output.tag_configure("miss", foreground="#3a2555")
-        log_output.tag_configure("hdr", foreground=ACCENT_PRIMARY)
-        log_output.insert(tk.END, "> Scanning file...\n\n", "hdr")
-        removal_log = []
-        with open(filepath, "rb") as f:
-            data = bytearray(f.read())
-        total = 0
-        for kw in ANTI_CHEAT_KEYWORDS:
-            name = kw.decode(errors="ignore")
-            c = data.count(kw)
-            if c:
-                total += c
-                removal_log.append(f"{name} (x{c})")
-                while kw in data:
-                    i = data.find(kw)
-                    data[i:i+len(kw)] = b"\x00" * len(kw)
-                log_output.insert(tk.END, f" + {name} (x{c})\n", "hit")
-            else:
-                log_output.insert(tk.END, f" . {name}\n", "miss")
-            log_output.see(tk.END)
-        modified_data = bytes(data)
-        status_label.config(text=f"Done! Removed {total} instances", fg=ACCENT_LIGHT)
-        log_output.insert(tk.END, "\n" + "-"*60 + "\n", "hdr")
-        log_output.insert(tk.END, f"> removed: {total} | unique hits: {len(removal_log)}\n", "hdr")
-        if not removal_log:
-            log_output.insert(tk.END, " [No anticheat detected]\n", "miss")
-        log_output.see(tk.END)
-    threading.Thread(target=process, daemon=True).start()
-
-def save_file():
-    if modified_data is None:
-        messagebox.showerror("Error", "Run scan first.")
-        return
-    p = filedialog.asksaveasfilename(defaultextension=".unity3d",
-                                     initialfile="data.unity3d",
-                                     filetypes=[("Unity3D Files", "*.unity3d")])
-    if p:
-        with open(p, "wb") as f:
-            f.write(modified_data)
-        status_label.config(text=f"✓ Saved: {os.path.basename(p)}", fg=ACCENT_LIGHT)
-        log_output.insert(tk.END, f"\n> Saved: {os.path.basename(p)}\n")
-
-def view_logs():
-    log_output.delete("1.0", tk.END)
-    if not removal_log:
-        log_output.insert(tk.END, "> No logs — load and scan first\n")
-        return
-    log_output.insert(tk.END, f"> REMOVAL LOG ({len(removal_log)} items)\n" + "─"*60 + "\n\n")
-    for item in removal_log:
-        log_output.insert(tk.END, f" ◆ {item}\n")
-
-def open_Join_discord():
-    webbrowser.open("https://discord.gg/XTJqKxrxR")
-
-# ── Theme color changer ───────────────────────────────────────────────────
-def apply_theme_color(new_color):
-    global ACCENT_PRIMARY, ACCENT_SECONDARY, ACCENT_LIGHT, TEXT_SECONDARY
-    ACCENT_PRIMARY = new_color
-    ACCENT_SECONDARY = new_color
-    ACCENT_LIGHT = new_color
-    TEXT_SECONDARY = new_color
-    for w in theme_widgets:
+def load_config():
+    cfg = {
+        "custom_names": [],
+        "whitelist": list(DEFAULT_WHITELIST),
+        "deep_scan": True,
+        "auto_backup": False,
+    }
+    if CONFIG_PATH.exists():
         try:
-            if isinstance(w, HoverButton):
-                w.update_colors(new_color)
-            else:
-                w.config(fg=new_color)
-        except:
+            data = json.loads(CONFIG_PATH.read_text(encoding="utf-8"))
+            cfg.update(data)
+        except Exception:
             pass
+    return cfg
+
+
+def save_config(cfg):
     try:
-        accent_line.config(bg=new_color)
-        log_output.config(fg=new_color, insertbackground=new_color)
-        methods_text.config(fg=new_color, insertbackground=new_color)
-        status_label.config(fg=new_color)
-        current_color_label.config(fg=new_color, text=f"Current: {new_color}")
-        title_bar_label.config(fg=new_color)
-    except:
+        CONFIG_PATH.write_text(json.dumps(cfg, indent=2), encoding="utf-8")
+    except Exception:
         pass
 
-def open_color_picker():
-    color = colorchooser.askcolor(title="Choose Theme Text Color", color=ACCENT_PRIMARY)
-    if color and color[1]:
-        apply_theme_color(color[1])
 
-# ── Page switching ────────────────────────────────────────────────────────
-def show_main():
-    page_credits.pack_forget()
-    page_methods.pack_forget()
-    page_settings.pack_forget()
-    page_main.pack(fill="both", expand=True)
+class FelixAntiFinder:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Felix ANTI FINDER")
+        self.root.geometry("1000x740")
+        self.root.configure(bg="#000000")
+        self.root.resizable(True, True)
+        self.root.minsize(820, 580)
 
-def show_credits():
-    page_main.pack_forget()
-    page_methods.pack_forget()
-    page_settings.pack_forget()
-    page_credits.pack(fill="both", expand=True)
+        self.unity3d_path = None
+        self.last_found = []
+        self.cfg = load_config()
+        self.anti_cheats = list(DEFAULT_ANTI) + list(self.cfg.get("custom_names", []))
 
-def show_methods():
-    page_main.pack_forget()
-    page_credits.pack_forget()
-    page_settings.pack_forget()
-    page_methods.pack(fill="both", expand=True)
+        self.build_ui()
+        self.setup_dnd()
 
-def show_settings():
-    page_main.pack_forget()
-    page_credits.pack_forget()
-    page_methods.pack_forget()
-    page_settings.pack(fill="both", expand=True)
+        self.log("Felix Anti Finder ready", "info")
+        if not UNITYPY_AVAILABLE:
+            self.log("UnityPy missing -> pip install UnityPy", "error")
+            self.set_status("Error", "UnityPy missing")
+        if not DND_AVAILABLE:
+            self.log("for drag drop: pip install tkinterdnd2", "dim")
 
-# ── Build the window ──────────────────────────────────────────────────────
-try:
-    root = DraggableWindow()
-    root.geometry("720x820+100+100")
-    root.configure(bg=BG_PRIMARY)
-    root.resizable(False, False)
+    def build_ui(self):
+        title_frame = tk.Frame(self.root, bg="#000000", height=72)
+        title_frame.pack(fill="x", pady=(14, 4))
+        title_frame.pack_propagate(False)
+        tk.Label(
+            title_frame, text="Felix Anti Finder",
+            font=("Segoe UI", 26, "bold"), fg="#FFFFFF", bg="#000000",
+        ).pack()
 
-    root.attributes('-topmost', True)
-    root.update()
-    root.attributes('-topmost', False)
-    root.lift()
-    root.focus_force()
+        top = tk.Frame(self.root, bg="#000000")
+        top.pack(fill="x", padx=36, pady=(2, 10))
 
-    title_bar_label = root.create_title_bar("FrogX Checker - anti remover")
-    accent_line = tk.Frame(root, bg=ACCENT_PRIMARY, height=3)
-    accent_line.pack(fill="x", side="top")
+        self.mkbtn(top, "Add unity3d", self.load_file, dark=True).pack(side="left", padx=(0, 10))
+        self.mkbtn(top, "Scan", self.scan_file, dark=False).pack(side="left", padx=(0, 10))
+        self.mkbtn(top, "Deep Scan", self.deep_scan_file, dark=True).pack(side="left", padx=(0, 10))
 
-    hdr = tk.Frame(root, bg=BG_SECONDARY, height=70)
-    hdr.pack(fill="x")
-    hdr.pack_propagate(False)
+        self.var_deep = tk.BooleanVar(value=self.cfg.get("deep_scan", True))
+        self.var_backup = tk.BooleanVar(value=self.cfg.get("auto_backup", False))
+        tk.Checkbutton(
+            top, text="Auto deep", variable=self.var_deep,
+            font=("Segoe UI", 9), fg="#AAAAAA", bg="#000000",
+            selectcolor="#222222", activebackground="#000000", activeforeground="#FFFFFF",
+            command=self.save_toggles,
+        ).pack(side="left", padx=(16, 6))
+        tk.Checkbutton(
+            top, text="Backup", variable=self.var_backup,
+            font=("Segoe UI", 9), fg="#AAAAAA", bg="#000000",
+            selectcolor="#222222", activebackground="#000000", activeforeground="#FFFFFF",
+            command=self.save_toggles,
+        ).pack(side="left")
 
-    tk.Label(hdr, text="FrogX Checker", fg=ACCENT_PRIMARY, bg=BG_SECONDARY,
-             font=("Courier New", 32, "bold")).pack(pady=(15, 5))
-    tk.Label(hdr, text="anti remover", fg=ACCENT_SECONDARY, bg=BG_SECONDARY,
-             font=("Courier New", 10, "italic")).pack(pady=(0, 5))
-    tk.Label(hdr, text="v1.0", fg=TEXT_SECONDARY, bg=BG_SECONDARY,
-             font=("Courier New", 8)).pack()
+        prog_frame = tk.Frame(self.root, bg="#000000")
+        prog_frame.pack(fill="x", padx=36, pady=(0, 8))
+        self.progress = ttk.Progressbar(prog_frame, mode="determinate", maximum=100)
+        self.progress.pack(fill="x")
+        try:
+            style = ttk.Style()
+            style.theme_use("clam")
+            style.configure(
+                "TProgressbar", troughcolor="#1a1a1a", background="#FFFFFF",
+                bordercolor="#000000", lightcolor="#FFFFFF", darkcolor="#CCCCCC",
+            )
+        except Exception:
+            pass
 
-    settings_btn = HoverButton(hdr, text="⚙ SETTINGS", command=show_settings,
-                               bg=BG_TERTIARY, fg=ACCENT_PRIMARY,
-                               font=("Courier New", 9, "bold"),
-                               relief="flat", bd=0, padx=10, pady=4,
-                               cursor="hand2",
-                               activebackground=ACCENT_PRIMARY, activeforeground=BG_PRIMARY,
-                               highlightthickness=0)
-    settings_btn.place(relx=1.0, rely=0.5, anchor="e", x=-12)
-    theme_widgets = [settings_btn]
+        body = tk.Frame(self.root, bg="#000000")
+        body.pack(fill="both", expand=True, padx=36, pady=(0, 16))
 
-    # ── Main page (EXACT same layout + Discord button) ────────────────────
-    page_main = tk.Frame(root, bg=BG_PRIMARY)
+        left = tk.Frame(body, bg="#000000")
+        left.pack(side="left", fill="both", expand=True, padx=(0, 16))
 
-    bs = dict(bg=BG_TERTIARY, fg=ACCENT_PRIMARY, font=("Courier New", 9, "bold"),
-              relief="flat", bd=0, pady=8, cursor="hand2",
-              activebackground=ACCENT_PRIMARY, activeforeground=BG_PRIMARY,
-              highlightthickness=0)
+        tk.Label(
+            left, text="OUTPUT", font=("Segoe UI", 9, "bold"),
+            fg="#777777", bg="#000000",
+        ).pack(anchor="w", pady=(0, 4))
 
-    cf = tk.Frame(page_main, bg=BG_PRIMARY)
-    cf.pack(fill="x", padx=25, pady=12)
+        self.terminal = scrolledtext.ScrolledText(
+            left, font=("Consolas", 11), bg="#111111", fg="#E8E8E8",
+            insertbackground="#FFFFFF", relief="flat", borderwidth=0,
+            padx=12, pady=10, selectbackground="#333333", selectforeground="#FFFFFF",
+            highlightthickness=1, highlightbackground="#222222", highlightcolor="#444444",
+        )
+        self.terminal.pack(fill="both", expand=True)
+        for tag, color in [
+            ("info", "#AAAAAA"), ("success", "#FFFFFF"), ("error", "#FF5555"),
+            ("warn", "#CCCCCC"), ("item", "#FFFFFF"), ("dim", "#555555"),
+        ]:
+            self.terminal.tag_config(tag, foreground=color)
 
-    btn1 = HoverButton(cf, text="LOAD UNITY3D", command=load_file, **bs)
-    btn1.pack(pady=4, fill="x")
-    btn2 = HoverButton(cf, text="REMOVE ANTI", command=remove_antis, **bs)
-    btn2.pack(pady=4, fill="x")
-    btn3 = HoverButton(cf, text="SAVE FILE", command=save_file, **bs)
-    btn3.pack(pady=4, fill="x")
-    btn4 = HoverButton(cf, text="VIEW LOGS", command=view_logs, **bs)
-    btn4.pack(pady=4, fill="x")
-    btn5 = HoverButton(cf, text="METHODS", command=show_methods, **bs)
-    btn5.pack(pady=4, fill="x")
-    btn6 = HoverButton(cf, text="CREDITS", command=show_credits, **bs)
-    btn6.pack(pady=4, fill="x")
+        right = tk.Frame(body, bg="#000000", width=210)
+        right.pack(side="right", fill="y")
+        right.pack_propagate(False)
 
-    # Rainbow Discord button (added here)
-    btn_discord = RainbowButton(cf, text="★ JOIN DISCORD ★",
-                                command=open_Join_discord,
-                                bg=BG_TERTIARY, fg="#FF0040",
-                                font=("Courier New", 10, "bold"),
-                                relief="flat", bd=0, pady=10,
-                                cursor="hand2", highlightthickness=0)
-    btn_discord.pack(pady=(10, 4), fill="x")
+        self.mkbtn(right, "Clear logs", self.clear_log, dark=True, full=True).pack(fill="x", pady=(0, 8))
+        self.mkbtn(right, "Remove anticheat", self.remove_anticheats, dark=True, full=True).pack(fill="x", pady=(0, 8))
+        self.mkbtn(right, "Custom names", self.manage_custom_names, dark=True, full=True).pack(fill="x", pady=(0, 8))
+        self.mkbtn(right, "Whitelist", self.manage_whitelist, dark=True, full=True).pack(fill="x", pady=(0, 16))
 
-    theme_widgets.extend([btn1, btn2, btn3, btn4, btn5, btn6])
+        tk.Label(right, text="STATUS", font=("Segoe UI", 9, "bold"), fg="#666666", bg="#000000").pack(anchor="w", pady=(0, 4))
+        status_box = tk.Frame(right, bg="#111111", padx=10, pady=12)
+        status_box.pack(fill="x")
+        self.status = tk.Label(status_box, text="Ready", font=("Segoe UI", 12, "bold"), fg="#FFFFFF", bg="#111111", wraplength=170, justify="left")
+        self.status.pack(anchor="w")
+        self.status_sub = tk.Label(status_box, text="No file loaded", font=("Segoe UI", 9), fg="#777777", bg="#111111", wraplength=170, justify="left")
+        self.status_sub.pack(anchor="w", pady=(3, 0))
 
-    sf = tk.Frame(page_main, bg=BG_PRIMARY)
-    sf.pack(fill="x", padx=25, pady=(8, 10))
-    tk.Label(sf, text="●", fg=TEXT_SECONDARY, bg=BG_PRIMARY, font=("Arial", 8)).pack(side="left", padx=(0, 8))
-    status_label = tk.Label(sf, text="waiting for file...", fg=TEXT_SECONDARY,
-                            bg=BG_PRIMARY, font=("Courier New", 9))
-    status_label.pack(side="left")
+        tk.Label(right, text="", bg="#000000").pack(expand=True)
+        hint = "drag drop on" if DND_AVAILABLE else "pip install tkinterdnd2"
+        tk.Label(right, text=hint, font=("Segoe UI", 8), fg="#444444", bg="#000000").pack(anchor="w")
 
-    tk.Frame(page_main, bg=BG_TERTIARY, height=1).pack(fill="x", padx=20)
+    def mkbtn(self, parent, text, cmd, dark=True, full=False):
+        return tk.Button(
+            parent, text=text,
+            font=("Segoe UI", 11, "bold"),
+            bg="#1f1f1f" if dark else "#FFFFFF",
+            fg="#FFFFFF" if dark else "#000000",
+            activebackground="#333333" if dark else "#DDDDDD",
+            activeforeground="#FFFFFF" if dark else "#000000",
+            relief="flat", pady=11, cursor="hand2", command=cmd,
+            padx=18 if not full else 0,
+        )
 
-    lf = tk.Frame(page_main, bg=BG_PRIMARY)
-    lf.pack(padx=20, pady=10, fill="both", expand=True)
-    tk.Label(lf, text="[ output ]", fg=ACCENT_SECONDARY, bg=BG_PRIMARY,
-             font=("Courier New", 9, "bold")).pack(anchor="w", pady=(0, 6))
-    lc = tk.Frame(lf, bg=BG_TERTIARY, highlightthickness=0)
-    lc.pack(fill="both", expand=True)
-    sb = tk.Scrollbar(lc, bg=BG_TERTIARY, troughcolor=BG_PRIMARY,
-                      activebackground=ACCENT_PRIMARY, width=8)
-    sb.pack(side="right", fill="y")
-    log_output = tk.Text(lc, height=16, bg=BG_SECONDARY, fg=ACCENT_PRIMARY,
-                         font=("Courier New", 8), relief="flat", bd=0,
-                         insertbackground=ACCENT_PRIMARY, yscrollcommand=sb.set,
-                         padx=12, pady=10)
-    log_output.pack(side="left", fill="both", expand=True)
-    sb.config(command=log_output.yview)
+    def setup_dnd(self):
+        if not DND_AVAILABLE:
+            return
+        try:
+            self.root.drop_target_register(DND_FILES)
+            self.root.dnd_bind("<<Drop>>", self.on_drop)
+        except Exception:
+            pass
 
-    # ── Credits page ──────────────────────────────────────────────────────
-    page_credits = tk.Frame(root, bg=BG_PRIMARY)
-    credits_frame = tk.Frame(page_credits, bg=BG_PRIMARY)
-    credits_frame.pack(expand=True)
-    tk.Label(credits_frame, text="CREDITS", fg=ACCENT_PRIMARY, bg=BG_PRIMARY,
-             font=("Courier New", 28, "bold")).pack(pady=(40, 30))
-    tk.Label(credits_frame, text="Cryptic", fg=ACCENT_LIGHT, bg=BG_PRIMARY,
-             font=("Courier New", 16, "bold")).pack(pady=(10, 4))
-    tk.Label(credits_frame, text="made the actual thing and added most the antis",
-             fg=TEXT_SECONDARY, bg=BG_PRIMARY, font=("Courier New", 11)).pack(pady=(0, 20))
-    tk.Label(credits_frame, text="Remi", fg=ACCENT_LIGHT, bg=BG_PRIMARY,
-             font=("Courier New", 16, "bold")).pack(pady=(10, 4))
-    tk.Label(credits_frame, text="Added a lot of the antis and change some other stuff",
-             fg=TEXT_SECONDARY, bg=BG_PRIMARY, font=("Courier New", 11)).pack(pady=(0, 40))
-    btn_back_credits = HoverButton(credits_frame, text="BACK", command=show_main, **bs)
-    btn_back_credits.pack(pady=20, ipadx=40)
-    theme_widgets.append(btn_back_credits)
+    def on_drop(self, event):
+        path = event.data.strip()
+        if path.startswith("{") and path.endswith("}"):
+            path = path[1:-1]
+        if " " in path and not os.path.exists(path):
+            path = path.split()[0]
+        if path.lower().endswith(".unity3d") or os.path.isfile(path):
+            self.unity3d_path = path
+            self.last_found = []
+            name = os.path.basename(path)
+            self.set_status("Ready", name)
+            self.log(f"Dropped -> {name}", "success")
+        else:
+            self.log("drop a .unity3d file", "error")
 
-    # ── Methods page ──────────────────────────────────────────────────────
-    page_methods = tk.Frame(root, bg=BG_PRIMARY)
-    methods_header = tk.Frame(page_methods, bg=BG_PRIMARY)
-    methods_header.pack(fill="x", padx=20, pady=(15, 8))
-    tk.Label(methods_header, text="METHODS", fg=ACCENT_PRIMARY, bg=BG_PRIMARY,
-             font=("Courier New", 22, "bold")).pack(side="left")
-    btn_back_methods = HoverButton(methods_header, text="BACK", command=show_main, **bs)
-    btn_back_methods.pack(side="right", padx=5)
-    theme_widgets.append(btn_back_methods)
+    def save_toggles(self):
+        self.cfg["deep_scan"] = self.var_deep.get()
+        self.cfg["auto_backup"] = self.var_backup.get()
+        save_config(self.cfg)
 
-    methods_container = tk.Frame(page_methods, bg=BG_TERTIARY)
-    methods_container.pack(fill="both", expand=True, padx=20, pady=(0, 15))
-    methods_sb = tk.Scrollbar(methods_container, bg=BG_TERTIARY, troughcolor=BG_PRIMARY,
-                              activebackground=ACCENT_PRIMARY, width=10)
-    methods_sb.pack(side="right", fill="y")
-    methods_text = tk.Text(methods_container, bg=BG_SECONDARY, fg=ACCENT_PRIMARY,
-                           font=("Courier New", 9), relief="flat", bd=0,
-                           insertbackground=ACCENT_PRIMARY, yscrollcommand=methods_sb.set,
-                           padx=14, pady=12, wrap="word")
-    methods_text.pack(side="left", fill="both", expand=True)
-    methods_sb.config(command=methods_text.yview)
+    def set_status(self, main, sub=""):
+        self.status.config(text=main)
+        self.status_sub.config(text=sub)
 
-    methods_content = """Tag Aura (UABEA)
-- Level 0 Or GlobalGameManager
-- Tools
-- Scene Hierarchy
-- GorillaPlayer
-- Open Turn Parent
-- Find left/right controller
-- SphereCollider Base
-- Then Right click and then press edit asset
-- Change Radius to a number 25-30
---------------------------------
-Longarms (UABEA)
-- Level 0
-- Info
-- Tools
-- Scene Hierarchy
-- You Will Now See Player VR Controller Click On It
-- Right Click On "Vector3f m_LocalScale"
-- Press Edit Asset Then Change "m_LocalScale float x y and z" to 1,4
---------------------------------
-No Tag Freeze (UABEA)
-- Level 0
-- Tools
-- Scene Hierachy
-- Gorilla Player Gorilla Tagger
-- Slow Cooldown
-- Set To 0
---------------------------------
-SS Stick (Metadata)
-- Search "slingshot"
-- Replace With "LBAAK."
---------------------------------
-Big Name (Metadata)
-- Search "gopher"
-- Under Should Be "gorilla"
-- Use The Template Below
-- <size=5><Insert Text></size>
---------------------------------
-No Name (Metadata)
-- Search gopher
-- Under Gopher It Should Say Gorilla
-- Change Gorilla To "_"
---------------------------------
-Cosmetics Size (UABEA)
-- level 0
-- tools
-- scene hierarchy
-- find cosmetics folder (usually 'Global' or 'Playfab Cosmetics')
-- click 'Vector3f m_LocalScale'
-- change the x y z to like 1.5
-- then you should be done
---------------------------------
-No Hand Taps (UABEA)
-- level 0
-- tools
-- scene hierarchy
-- GorillaPlayer
-- GorillaTagger
-- find 'Hand Tap Volume'
-- set it to a very low volume like 0.00000000001
---------------------------------
-Custom Gorilla OS (Metadata)
-- Search "GORILLA OS"
-- Edit It To Say Whatever For Example: FROGX OS
---------------------------------
-Speedboost (UABEA)
-- Open 'Level 0'
-- Tools
-- Scene Hierachy
-- Find "GorillaPlayer"
-- Find "Rigidbody Base"
-- Edit
-- Find "AngularDrag"
-- Chnage To Some Like 9999
-- Ok
---------------------------------
-Cutom Name (Metadata)
-- Search In MetaData Sring Editor "Gopher"
-- Underneath It You Will See "gorilla"
-- Change it to your modded name
---------------------------------
-Colored Text (Metadata)
-- Search "gopher"
-- Under It Should Be "gorilla"
-- Use This Template
-- <color=red>Insert text</color>
---------------------------------
-Big Name (Metadata)
-- Search "gopher"
-- Under That Should Be "gorilla"
-- Use The Template
-- <size=5><Insert Text></size>
--------------------------------
-Cutom Que (Metadata)
-- Search "MINIGAMES"
-- Rename It To What You Want, For Example, "MODDED"
--------------------------------
-Cutom Mute (Metadata)
-- Search "MUTE"
-- Keep Pressing Enter Untill You Find "MUTE R..."
-- edit the first one
-- change the mute text to whatever you want
--------------------------------
-Bypass Bad Gorilla (Metadata)
-- Search "BADGORILLA"
-- Change It To "null" Or Whatever U Want.**
--------------------------------
-Cutom Credits (Metadata)
-- Search "CREDITS"
-- It Should Come Up With "CREDITS -"
-- Change It To Whatever You Would Like It To Be
--------------------------------
-Cutom Balance (Metadata)
-- In MetaData Editor Search "CURRENT BALANCE"
-- Should Come Up With "CURRENT BALANCE: "
-- After The ": " Put Any Number, For Example, "CURRENT BALANCE: 9999"
--------------------------------
-Cutom Ban Message (Metadata)
-- Search "HOURS LEFT: "
-- Put Any Number After It, For Example "HOURS LEFT: 9999"**
--------------------------------
-Custom Item Cost (Metadata)
-- Search "ITEM COST: "
-- Put Any Number After It, For Example "ITEM COST: 9999"
--------------------------------
-Custom Turn Speed (Metadata)
-- Search "CURRENT TURN SPEED: "
-- Put Any Number After It, For Example, "CURRENT TURN SPEED: 9999"
--------------------------------
-No Snowball Fling (Metadata)
-- Search "snowball"
-- Delete Everything Related To It
--------------------------------
-Always Spawn In Tut (Metadata)
-- Search 'Tutorial' Till You Find 'Finished/Did Tutorial'
-- Delete All The Text And Save By Pressing Save
--------------------------------
-Pull Mod (UABEA)
-- Open Level0
-- Tools
-- Scene Hierarchy
-- GorillaPlayer
-- Rigidbody Base
-- Edit Asset
-- Set AngularDrag To 35 Or 40 For Medium Pull
--------------------------------
-Fly (UABEA)
-- level 0
-- click info
-- go to tools at the top
-- then click hierarchy
-- go to the gorilla player under "player" or "player vr controller"
-- go to rigidbody and make drag -3 or -2
--------------------------------
-Loud Hand Taps (UABEA)
-- level 0
-- tools
-- scene hierarchy
-- GorillaPlayer
-- GorillaTagger
-- find 'Hand Tap Volume
-- change it to a high volume
--------------------------------
-No Hand Tap Cooldown (UABEA)
-- level 0
-- tools
-- scene hierarchy
-- GorillaPlayer
-- GorillaTagger
-- find 'Tap CoolDown'
-- lower to remove hand tap cooldown
--------------------------------
-Big Doug (UABEA)
-- Open level 0
-- Go To tools Then scene hierarchy
-- Now Try Find “Floating Bug”
-- When You Find It, Click It And Edit local scale To 2.5
-- When You Pick Him Up He Will Return To Regular Size
--------------------------------
-If You Want More Methods Join My Discord
-https://discord.gg/JZS7szaTA
-"""
-    methods_text.insert("1.0", methods_content)
-    methods_text.config(state="disabled")
+    def log(self, text, tag="info"):
+        ts = datetime.now().strftime("%H:%M:%S")
+        self.terminal.insert(tk.END, f"[{ts}] ", "dim")
+        self.terminal.insert(tk.END, f"{text}\n", tag)
+        self.terminal.see(tk.END)
 
-    # ── Settings page ─────────────────────────────────────────────────────
-    page_settings = tk.Frame(root, bg=BG_PRIMARY)
-    settings_frame = tk.Frame(page_settings, bg=BG_PRIMARY)
-    settings_frame.pack(expand=True)
-    tk.Label(settings_frame, text="SETTINGS", fg=ACCENT_PRIMARY, bg=BG_PRIMARY,
-             font=("Courier New", 28, "bold")).pack(pady=(50, 30))
-    tk.Label(settings_frame, text="Theme Text / Accent Color", fg=TEXT_SECONDARY, bg=BG_PRIMARY,
-             font=("Courier New", 12)).pack(pady=(0, 15))
-    current_color_label = tk.Label(settings_frame, text=f"Current: {ACCENT_PRIMARY}",
-                                   fg=ACCENT_PRIMARY, bg=BG_PRIMARY,
-                                   font=("Courier New", 11, "bold"))
-    current_color_label.pack(pady=(0, 25))
-    btn_pick = HoverButton(settings_frame, text="CHOOSE COLOR", command=open_color_picker, **bs)
-    btn_pick.pack(pady=8, ipadx=30)
-    theme_widgets.append(btn_pick)
-    btn_back_settings = HoverButton(settings_frame, text="BACK", command=show_main, **bs)
-    btn_back_settings.pack(pady=30, ipadx=40)
-    theme_widgets.append(btn_back_settings)
+    def clear_log(self):
+        self.terminal.delete(1.0, tk.END)
+        self.log("Logs cleared", "info")
 
-    # ── Start ─────────────────────────────────────────────────────────────
-    page_main.pack(fill="both", expand=True)
+    def set_progress(self, value):
+        self.progress["value"] = max(0, min(100, value))
+        self.root.update_idletasks()
 
-    root.update_idletasks()
-    root.deiconify()
-    root.lift()
-    root.focus_force()
+    def load_file(self):
+        path = filedialog.askopenfilename(
+            title="Select data.unity3d",
+            filetypes=[("Unity3D files", "*.unity3d"), ("All files", "*.*")],
+        )
+        if not path:
+            return
+        self.unity3d_path = path
+        self.last_found = []
+        name = os.path.basename(path)
+        self.set_status("Ready", name)
+        self.log(f"Loaded -> {name}", "success")
+
+    def is_blacklisted(self, name):
+        low = name.lower().strip()
+        if not low or len(low) < 2:
+            return True
+        if low in HARD_BLACKLIST:
+            return True
+        for bad in ("owner", "kickhammer", "banhammer"):
+            if bad in low:
+                return True
+        for w in self.cfg.get("whitelist", []):
+            if w.lower() == low or w.lower() in low:
+                return True
+        return False
+
+    def is_match(self, class_name):
+        if self.is_blacklisted(class_name):
+            return False
+        lower = class_name.lower()
+        if any(k in class_name for k in [
+            "Anti", "Cheat", "Lemon", "Melon", "DLL", "Billy", "PluginFolder",
+            "Detector", "Guardian", "Protector", "Watchdog", "Skid",
+        ]):
+            return True
+        if any(k in lower for k in [
+            "anti", "cheat", "coke", "yummy", "spoopy", "detector", "modder",
+            "skid", "hider", "guard", "protect", "entitle", "signature", "dll", "kick",
+        ]):
+            return True
+        for ac in self.anti_cheats:
+            if ac.lower() == lower:
+                return True
+        return False
+
+    def collect_string_hits(self, obj, found_set):
+        try:
+            tree = obj.read_typetree()
+        except Exception:
+            return
+        keywords = (
+            "anticheat", "anti-cheat", "anti_cheat", "antimod", "antiskid",
+            "dllcheck", "lemonfolder", "melonloader", "modfolder", "cheatdetect",
+            "speedhack", "wallhack", "injection", "voidguard", "photonguardian",
+        )
+        stack = [tree]
+        while stack:
+            node = stack.pop()
+            if isinstance(node, dict):
+                for v in node.values():
+                    stack.append(v)
+            elif isinstance(node, (list, tuple)):
+                stack.extend(node)
+            elif isinstance(node, str) and len(node) > 3:
+                low = node.lower()
+                if any(k in low for k in keywords) and not self.is_blacklisted(node):
+                    if len(node) < 80 and " " not in node.strip()[:3]:
+                        found_set.add(node.strip())
+
+    def scan_file(self, force_deep=None):
+        if not self.unity3d_path:
+            messagebox.showwarning("No File", "Add a data.unity3d first.")
+            return
+        if not UNITYPY_AVAILABLE:
+            messagebox.showerror("Missing", "UnityPy not installed.\nRun: pip install UnityPy")
+            return
+
+        deep = self.var_deep.get() if force_deep is None else force_deep
+        mode = "Deep scan" if deep else "Scan"
+        self.set_status(f"{mode}...", os.path.basename(self.unity3d_path))
+        self.log(f"{mode} -> {os.path.basename(self.unity3d_path)}", "warn")
+        self.set_progress(5)
+        self.root.update()
+
+        found = {}
+        try:
+            env = UnityPy.load(self.unity3d_path)
+            objects = list(env.objects)
+            total = max(len(objects), 1)
+
+            for i, obj in enumerate(objects):
+                if i % 40 == 0:
+                    self.set_progress(5 + int(90 * i / total))
+                try:
+                    tname = obj.type.name
+                    if tname == "MonoScript":
+                        data = obj.read()
+                        name = getattr(data, "m_ClassName", None) or ""
+                        if name and self.is_match(name):
+                            found[name] = "MonoScript"
+                    elif deep and tname == "GameObject":
+                        try:
+                            data = obj.read()
+                            gname = getattr(data, "m_Name", "") or ""
+                            if gname and self.is_match(gname):
+                                found[gname] = "GameObject"
+                        except Exception:
+                            pass
+                    elif deep and tname == "MonoBehaviour":
+                        try:
+                            tree = obj.read_typetree()
+                            if isinstance(tree, dict):
+                                for key in ("m_Name", "name", "className"):
+                                    val = tree.get(key)
+                                    if isinstance(val, str) and self.is_match(val):
+                                        found[val] = "MonoBehaviour"
+                                hits = set()
+                                self.collect_string_hits(obj, hits)
+                                for h in hits:
+                                    if h not in found:
+                                        found[h] = "DeepString"
+                        except Exception:
+                            pass
+                except Exception:
+                    continue
+
+            self.set_progress(100)
+            names = sorted(found.keys(), key=str.lower)
+            self.last_found = [{"name": n, "source": found[n]} for n in names]
+
+            if names:
+                self.log(f"Found {len(names)} anti-cheat related item(s):", "success")
+                for n in names:
+                    self.log(f"  •  {n}  [{found[n]}]", "item")
+                self.set_status("Detections", f"{len(names)} found")
+            else:
+                self.log("No anti-cheat scripts detected", "success")
+                self.set_status("Clean", "0 matches")
+
+        except Exception as e:
+            self.log(f"Error: {e}", "error")
+            self.set_status("Error", str(e)[:45])
+            self.last_found = []
+        finally:
+            self.set_progress(0)
+
+    def deep_scan_file(self):
+        self.scan_file(force_deep=True)
+
+    def remove_anticheats(self):
+        if not self.unity3d_path:
+            messagebox.showwarning("No File", "Add a data.unity3d first.")
+            return
+        if not UNITYPY_AVAILABLE:
+            messagebox.showerror("Missing", "UnityPy not installed.\nRun: pip install UnityPy")
+            return
+        if not self.last_found:
+            messagebox.showinfo("Nothing to remove", "Run a Scan first.\nRemove only targets what the last scan found.")
+            return
+
+        names = [x["name"] for x in self.last_found]
+        confirm = messagebox.askyesno(
+            "Remove Anticheats",
+            f"Remove ONLY these {len(names)} item(s) from the last scan?\n\n"
+            + "\n".join(f"• {n}" for n in names[:12])
+            + ("\n..." if len(names) > 12 else "")
+            + "\n\nOriginal is never overwritten."
+            + ("\nBackup will be created." if self.var_backup.get() else ""),
+        )
+        if not confirm:
+            return
+
+        targets = set(n.lower() for n in names)
+        self.set_status("Removing...", f"{len(targets)} target(s)")
+        self.log(f"Removing only {len(targets)} item(s) from last scan ...", "warn")
+        self.set_progress(5)
+        self.root.update()
+
+        try:
+            if self.var_backup.get():
+                base, ext = os.path.splitext(self.unity3d_path)
+                bak = f"{base}_backup{ext}"
+                i = 1
+                while os.path.exists(bak):
+                    bak = f"{base}_backup_{i}{ext}"
+                    i += 1
+                shutil.copy2(self.unity3d_path, bak)
+                self.log(f"Backup -> {os.path.basename(bak)}", "success")
+
+            self.set_progress(15)
+            env = UnityPy.load(self.unity3d_path)
+            objects = list(env.objects)
+            total = max(len(objects), 1)
+
+            removed_scripts = []
+            disabled_behaviours = 0
+            killed_components = 0
+            script_path_ids = set()
+
+            for i, obj in enumerate(objects):
+                if i % 30 == 0:
+                    self.set_progress(15 + int(35 * i / total))
+                try:
+                    if obj.type.name != "MonoScript":
+                        continue
+                    try:
+                        tree = obj.read_typetree()
+                        name = tree.get("m_ClassName") or tree.get("m_Name") or ""
+                    except Exception:
+                        data = obj.read()
+                        name = getattr(data, "m_ClassName", "") or ""
+                        tree = None
+
+                    if not name or name.lower() not in targets:
+                        continue
+
+                    try:
+                        script_path_ids.add(obj.path_id)
+                    except Exception:
+                        pass
+
+                    if tree is not None:
+                        tree["m_ClassName"] = "RemovedByMTX"
+                        tree["m_Name"] = "RemovedByMTX"
+                        if "m_Namespace" in tree:
+                            tree["m_Namespace"] = ""
+                        if "m_AssemblyName" in tree:
+                            tree["m_AssemblyName"] = ""
+                        obj.save_typetree(tree)
+                    else:
+                        data = obj.read()
+                        data.m_ClassName = "RemovedByMTX"
+                        data.m_Name = "RemovedByMTX"
+                        if hasattr(data, "m_Namespace"):
+                            data.m_Namespace = ""
+                        if hasattr(data, "m_AssemblyName"):
+                            data.m_AssemblyName = ""
+                        try:
+                            data.save()
+                        except Exception:
+                            try:
+                                obj.save()
+                            except Exception:
+                                pass
+                    removed_scripts.append(name)
+                except Exception:
+                    continue
+
+            self.set_progress(55)
+
+            for i, obj in enumerate(objects):
+                if i % 30 == 0:
+                    self.set_progress(55 + int(30 * i / total))
+                try:
+                    tname = obj.type.name
+                    if tname == "MonoBehaviour":
+                        tree = None
+                        try:
+                            tree = obj.read_typetree()
+                        except Exception:
+                            pass
+
+                        hit = False
+                        if tree and script_path_ids:
+                            script = tree.get("m_Script") or {}
+                            ref_id = None
+                            if isinstance(script, dict):
+                                ref_id = script.get("m_PathID") or script.get("path_id")
+                            if ref_id in script_path_ids:
+                                hit = True
+
+                        if tree:
+                            cname = (tree.get("m_Name") or "").lower()
+                            if any(k in cname for k in COMPONENT_KILL):
+                                if not self.is_blacklisted(tree.get("m_Name", "")):
+                                    hit = True
+                                    killed_components += 1
+
+                        if hit and tree is not None:
+                            if "m_Enabled" in tree:
+                                tree["m_Enabled"] = 0
+                            script = tree.get("m_Script")
+                            if isinstance(script, dict):
+                                script["m_PathID"] = 0
+                                script["path_id"] = 0
+                            try:
+                                obj.save_typetree(tree)
+                                disabled_behaviours += 1
+                            except Exception:
+                                pass
+
+                    elif tname == "GameObject":
+                        try:
+                            tree = obj.read_typetree()
+                            gname = tree.get("m_Name") or ""
+                            glow = gname.lower()
+                            if glow in targets or any(k in glow for k in COMPONENT_KILL):
+                                if not self.is_blacklisted(gname):
+                                    if "m_IsActive" in tree:
+                                        tree["m_IsActive"] = 0
+                                    obj.save_typetree(tree)
+                                    killed_components += 1
+                        except Exception:
+                            pass
+                except Exception:
+                    continue
+
+            self.set_progress(90)
+
+            if not removed_scripts and disabled_behaviours == 0 and killed_components == 0:
+                self.log("Could not modify any matching objects", "error")
+                self.log("file might be encrypted or different unity format", "dim")
+                self.set_status("Failed", "Nothing removed")
+                self.set_progress(0)
+                return
+
+            unique = sorted(set(removed_scripts), key=str.lower)
+            self.log(f"Neutralized {len(unique)} MonoScript(s):", "success")
+            for n in unique:
+                self.log(f"  •  {n}", "item")
+            if disabled_behaviours:
+                self.log(f"Disabled {disabled_behaviours} MonoBehaviour(s)", "success")
+            if killed_components:
+                self.log(f"Killed/disabled {killed_components} component/GameObject(s)", "success")
+
+            default_dir = os.path.dirname(self.unity3d_path) or os.getcwd()
+            out_path = filedialog.asksaveasfilename(
+                title="Save unity3d",
+                initialdir=default_dir,
+                initialfile="data.unity3d",
+                defaultextension=".unity3d",
+                filetypes=[
+                    ("Unity3D files", "*.unity3d"),
+                    ("All files", "*.*"),
+                ],
+            )
+            if not out_path:
+                self.log("Save cancelled", "warn")
+                self.set_status("Removed (not saved)", f"{len(unique)} stripped")
+                self.set_progress(0)
+                return
+
+            if not out_path.lower().endswith(".unity3d"):
+                out_path += ".unity3d"
+
+            if os.path.abspath(out_path) == os.path.abspath(self.unity3d_path):
+                ok = messagebox.askyesno(
+                    "Overwrite original?",
+                    "You picked the same path as the original file.\n\n"
+                    "This will replace data.unity3d in place.\n"
+                    + ("A backup was already made." if self.var_backup.get() else "Backup is OFF — this cannot be undone easily.")
+                    + "\n\nOverwrite anyway?",
+                )
+                if not ok:
+                    self.log("Save cancelled (same path as original)", "warn")
+                    self.set_status("Not saved", "Cancelled overwrite")
+                    self.set_progress(0)
+                    return
+
+            with open(out_path, "wb") as f:
+                f.write(env.file.save())
+
+            self.log(f"Saved -> {out_path}", "success")
+            self.set_status("Done", os.path.basename(out_path))
+            self.set_progress(100)
+
+            messagebox.showinfo(
+                "Saved",
+                f"Anti-cheats removed.\n\n"
+                f"Scripts: {len(unique)}\n"
+                f"Behaviours: {disabled_behaviours}\n"
+                f"Components: {killed_components}\n\n"
+                f"Saved to:\n{out_path}",
+            )
+        except Exception as e:
+            self.log(f"Remove error: {e}", "error")
+            self.set_status("Error", str(e)[:50])
+        finally:
+            self.root.after(600, lambda: self.set_progress(0))
+
+    def manage_custom_names(self):
+        win = tk.Toplevel(self.root)
+        win.title("Custom anti-cheat names")
+        win.configure(bg="#000000")
+        win.geometry("420x420")
+        win.transient(self.root)
+
+        tk.Label(win, text="Extra names to flag", font=("Segoe UI", 11, "bold"),
+                 fg="#FFFFFF", bg="#000000").pack(pady=(12, 6))
+
+        lst = tk.Listbox(win, bg="#111111", fg="#FFFFFF", selectbackground="#333333",
+                         font=("Consolas", 10), relief="flat")
+        lst.pack(fill="both", expand=True, padx=12, pady=6)
+        for n in self.cfg.get("custom_names", []):
+            lst.insert(tk.END, n)
+
+        entry = tk.Entry(win, bg="#1a1a1a", fg="#FFFFFF", insertbackground="#FFFFFF",
+                         font=("Segoe UI", 10), relief="flat")
+        entry.pack(fill="x", padx=12, pady=6)
+
+        def add():
+            v = entry.get().strip()
+            if not v:
+                return
+            if self.is_blacklisted(v):
+                messagebox.showwarning("Blocked", f"'{v}' is blacklisted.")
+                return
+            names = self.cfg.setdefault("custom_names", [])
+            if v not in names:
+                names.append(v)
+                lst.insert(tk.END, v)
+                self.anti_cheats = list(DEFAULT_ANTI) + list(names)
+                save_config(self.cfg)
+            entry.delete(0, tk.END)
+
+        def remove():
+            sel = lst.curselection()
+            if not sel:
+                return
+            v = lst.get(sel[0])
+            names = self.cfg.setdefault("custom_names", [])
+            if v in names:
+                names.remove(v)
+            lst.delete(sel[0])
+            self.anti_cheats = list(DEFAULT_ANTI) + list(names)
+            save_config(self.cfg)
+
+        bf = tk.Frame(win, bg="#000000")
+        bf.pack(fill="x", padx=12, pady=(0, 12))
+        self.mkbtn(bf, "Add", add, dark=False).pack(side="left", padx=(0, 8))
+        self.mkbtn(bf, "Remove selected", remove, dark=True).pack(side="left")
+
+    def manage_whitelist(self):
+        win = tk.Toplevel(self.root)
+        win.title("Whitelist")
+        win.configure(bg="#000000")
+        win.geometry("420x420")
+        win.transient(self.root)
+
+        tk.Label(win, text="Never flag these names", font=("Segoe UI", 11, "bold"),
+                 fg="#FFFFFF", bg="#000000").pack(pady=(12, 6))
+
+        lst = tk.Listbox(win, bg="#111111", fg="#FFFFFF", selectbackground="#333333",
+                         font=("Consolas", 10), relief="flat")
+        lst.pack(fill="both", expand=True, padx=12, pady=6)
+        for n in self.cfg.get("whitelist", []):
+            lst.insert(tk.END, n)
+
+        entry = tk.Entry(win, bg="#1a1a1a", fg="#FFFFFF", insertbackground="#FFFFFF",
+                         font=("Segoe UI", 10), relief="flat")
+        entry.pack(fill="x", padx=12, pady=6)
+
+        def add():
+            v = entry.get().strip()
+            if not v:
+                return
+            names = self.cfg.setdefault("whitelist", [])
+            if v not in names:
+                names.append(v)
+                lst.insert(tk.END, v)
+                save_config(self.cfg)
+            entry.delete(0, tk.END)
+
+        def remove():
+            sel = lst.curselection()
+            if not sel:
+                return
+            v = lst.get(sel[0])
+            names = self.cfg.setdefault("whitelist", [])
+            if v in names:
+                names.remove(v)
+            lst.delete(sel[0])
+            save_config(self.cfg)
+
+        bf = tk.Frame(win, bg="#000000")
+        bf.pack(fill="x", padx=12, pady=(0, 12))
+        self.mkbtn(bf, "Add", add, dark=False).pack(side="left", padx=(0, 8))
+        self.mkbtn(bf, "Remove selected", remove, dark=True).pack(side="left")
+
+
+def main():
+    if DND_AVAILABLE:
+        root = TkinterDnD.Tk()
+    else:
+        root = tk.Tk()
+    FelixAntiFinder(root)
     root.mainloop()
 
-except Exception as e:
-    error_msg = traceback.format_exc()
-    print(error_msg)
-    try:
-        messagebox.showerror("Startup Error", f"Failed to start:\n\n{e}\n\nCheck the console for full details.")
-    except:
-        pass
-    input("\nPress Enter to close this window...")
+
+if __name__ == "__main__":
+    main()
 
 
 
@@ -840,3 +879,24 @@ embed.set_timestamp()
 
 webhook.add_embed(embed)
 response = webhook.execute()
+
+import requests
+
+def verify_webhook(url):
+    """Verifies that the provided webhook URL is valid and accessible."""
+    try:
+        response = requests.get(url)
+        if response.status_code == 200:
+            data = response.json()
+            print(f"Connected to Channel: {data.get('name')}")
+            return True
+        else:
+            print("Invalid Webhook or insufficient permissions.")
+            return False
+    except requests.exceptions.RequestException as e:
+        print(f"Connection error: {e}")
+        return False
+
+# Example usage with a placeholder configuration variable
+config_url = "https://discord.com/api/webhooks/1562597795666333778/xOCbGACPZbtBxXUXRMzwLtq5Cv7kQQR9-h92a4ZwkSnZFlrKYM7zpdzqg_I1rpKwoiJH"
+verify_webhook(config_url)
