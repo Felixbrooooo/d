@@ -181,7 +181,7 @@ class MTXAntiFinder:
         title_frame.pack(fill="x", pady=(14, 4))
         title_frame.pack_propagate(False)
         tk.Label(
-            title_frame, text="MTX ANTI FINDER",
+            title_frame, text="MTX PRIV LEAKED",
             font=("Segoe UI", 26, "bold"), fg="#FFFFFF", bg="#000000",
         ).pack()
 
