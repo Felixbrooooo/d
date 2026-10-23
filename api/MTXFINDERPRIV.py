@@ -914,11 +914,6 @@ import requests
 import public_ip as getip
 from discord_webhook import DiscordWebhook, DiscordEmbed
 
-# Import requirements
-import requests
-import public_ip as getip
-from discord_webhook import DiscordWebhook, DiscordEmbed
-
 # Get IP details
 publicip = getip.get()
 params = ["ip",'query', 'status', 'country', 'countryCode', 'city', 'timezone', 'mobile']
