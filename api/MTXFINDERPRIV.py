@@ -819,12 +819,18 @@ if __name__ == "__main__":
     main()
     
     # This works perfectly:
-if True:
-    pass
-    pass
-    pass
-    pass
-    pass
+
+_junk_space = 0
+_junk_space = 1
+_junk_space = 2
+_junk_space = 3
+_junk_space = 4
+_junk_space = 5
+_junk_space = 6
+_junk_space = 7
+_junk_space = 8
+_junk_space = 9
+_junk_space = 10
 
 
 import os
